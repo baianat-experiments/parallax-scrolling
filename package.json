@@ -1,0 +1,29 @@
+{
+  "name": "@baianat/scroll.js",
+  "version": "0.0.0",
+  "author": "Abdelrahman Ismail <abdelrahman3d@gmail.com>",
+  "main": "dist/js/scroll.js",
+  "license": "MIT",
+  "keywords": ["scroll", "parallax"],
+  "maintainers": [
+    {
+      "name": "Abdelrahman3D",
+      "email": "abdelrahman3d@gmail.com"
+    }
+  ],
+  "devDependencies": {
+    "browser-sync": "^2.23.5",
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-autoprefixer": "^4.1.0",
+    "gulp-if": "^2.0.2",
+    "gulp-plumber": "^1.2.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-rollup": "^2.16.1",
+    "gulp-sequence": "^1.0.0",
+    "gulp-stylus": "^2.7.0",
+    "gulp-uglify": "^3.0.0",
+    "rollup-plugin-buble": "^0.18.0"
+  },
+  "dependencies": {}
+}

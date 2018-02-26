@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+  <style media="screen">
+    body {
+      margin: 0;
+      background-size: 100px 100px;
+      background-position: center center;
+      background-image: linear-gradient(
+        0deg,
+        transparent 24%,
+        #000 25%, 
+        #000 26%, 
+        transparent 27%, 
+        transparent 74%, 
+        #000 75%, 
+        #000 76%, 
+        transparent 77%, 
+        transparent
+      ),
+      linear-gradient(
+        90deg,
+        transparent 24%, 
+        #000 25%, 
+        #000 26%, 
+        transparent 27%, 
+        transparent 74%, 
+        #000 75%, 
+        #000 76%, 
+        transparent 77%, 
+        transparent
+      );
+    }
+    .fixed-margin {
+      height: 150vh;
+    }
+    .square {
+      width: 200px;
+      height: 200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 100px;
+      background-image: linear-gradient(-45deg, #0690FA, #37a6fb);
+      box-shadow: 2px 2px 20px rgba(0, 0, 0, 0.5);
+      border-radius: 2px;
+    }
+    .is-active {
+      background-image: linear-gradient(-45deg, #FF0084, #ff66b5);
+    }
+    .flex {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+  </style>
+
+  <div class="fixed-margin"></div>
+
+  <div class="flex">
+    <div class="square" id="square1">A</div>
+    <div class="square" id="square2">B</div>
+  </div>
+  
+
+  <div class="fixed-margin"></div>
+
+  <div class="flex">
+    <div class="square" id="square3">C</div>
+    <div class="square" id="square4">D</div>
+  </div>
+
+  <div class="fixed-margin"></div>
+
+  <div class="flex">
+    <div class="square" id="square5">E</div>
+    <div class="square" id="square6">F</div>
+  </div>
+
+  <div class="fixed-margin"></div>
+  
+  <script src="dist/js/scroll.js"></script>
+  <script>
+    const scroller = new Scroll(
+      [{
+        element: '#square1',
+        translate: {
+          y: [-200, 200]
+        },
+        rotate: [-45, 45]
+      }, {
+        element: '#square2',
+        scale: [0.5, 1]
+      }, {
+        element: '#square3',
+        translate: {
+          y: [200, -200],
+        },
+      }, {
+        element: '#square4',
+        translate: {
+          x: [-20, 20]
+        },
+        opacity: [1, 0]
+      }, {
+        element: '#square5',
+        rotate: [-360, 360]
+      }, {
+        element: '#square6',
+        opacity: [0, 1],
+        class: 'is-active'
+      }]
+    )
+  </script>
+</body>
+</html>

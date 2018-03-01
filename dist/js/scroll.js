@@ -78,16 +78,18 @@ Scroll.prototype._init = function _init () {
 Scroll.prototype._initElements = function _initElements () {
     var this$1 = this;
 
-  this.elements = this.elementsData.map(function (data) { return select(data.element); });
+  this.elements = [];
+  this.elementsData.forEach(function (data) {
+    var elm = select(data.element);
+    data.element = elm;
+    data.rect = elm.getBoundingClientRect();
+    this$1.addMissingTransformation(data);
+    this$1.generateFixedData(data);
+    elm.style.opacity = data.opacity[0];
+    elm.style.transform = "\n        translate3d(\n          " + (data.translate.x[0]) + (data.translate.unit) + ",\n          " + (data.translate.y[0]) + (data.translate.unit) + ",\n          0\n        )\n        rotate(" + (data.rotate[0]) + "deg)\n        scale(" + (data.scale[0]) + ")";
 
-  // eslint-disable-next-line
-  this.elements.forEach(function (el, index) {
-    this$1.addMissingTransformation(this$1.elementsData[index]);
-    el.style.transform = "\n      translate3d(\n        " + (this$1.elementsData[index].translate.x[0]) + (this$1.elementsData[index].translate.unit) + ",\n        " + (this$1.elementsData[index].translate.y[0]) + (this$1.elementsData[index].translate.unit) + ",\n        0\n      )\n      rotate(" + (this$1.elementsData[index].rotate[0]) + "deg)\n      scale(" + (this$1.elementsData[index].scale[0]) + ")";
-    el.style.opacity = this$1.elementsData[index].opacity[0];
-
-    this$1.generateFixedData(this$1.elementsData[index], el);
-    this$1.observer.observe(el);
+    this$1.observer.observe(elm);
+    this$1.elements.push(data.element);
   });
 };
 
@@ -126,6 +128,10 @@ Scroll.prototype._initEvents = function _initEvents () {
       width: window.innerWidth
     };
     this$1.scrolled = window.scrollY;
+    this$1.elements.forEach(function (el, index) {
+      this$1.generateFixedData(this$1.elementsData[index], el);
+    });
+    console.log(this$1.elementsData);
     this$1.update();
   }, 100));
 };
@@ -148,15 +154,17 @@ Scroll.prototype.update = function update () {
 };
 
 Scroll.prototype.getTransform = function getTransform (el) {
-  var ratio = this.scrolled - el.position;
+  var scroll = this.scrolled - el.position;
+  var uPerS = el.unitPerScroll;
 
-  return {
-    y: getInRange(el.translate.y[0] + Math.sign(el.translate.y[1]) * ratio * el.unitPerScroll.y, el.translate.y),
-    x: getInRange(el.translate.x[0] + Math.sign(el.translate.x[1]) * ratio * el.unitPerScroll.x, el.translate.x),
-    deg: getInRange(el.rotate[0] + Math.sign(el.rotate[1]) * ratio * el.unitPerScroll.deg, el.rotate),
-    scale: getInRange(el.scale[0] + (el.scale[0] > el.scale[1] ? -1 : 1) * ratio * el.unitPerScroll.scale, el.scale),
-    opacity: getInRange(el.opacity[0] + (el.opacity[0] > el.opacity[1] ? -1 : 1) * ratio * el.unitPerScroll.opacity, el.opacity)
-  }
+  var transform = {
+    y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
+    x: uPerS.x ? getInRange(el.translate.x[0] + scroll * el.unitPerScroll.x, el.translate.x) : 0,
+    deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * el.unitPerScroll.deg, el.rotate) : 0,
+    scale: uPerS.scale ? getInRange(el.scale[0] + scroll * el.unitPerScroll.scale, el.scale) : 1,
+    opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * el.unitPerScroll.opacity, el.opacity) : 1
+  };
+  return transform;
 };
 
 Scroll.prototype.addMissingTransformation = function addMissingTransformation (el) {
@@ -183,8 +191,7 @@ Scroll.prototype.addMissingTransformation = function addMissingTransformation (e
   }
 };
 
-Scroll.prototype.generateFixedData = function generateFixedData (elData, el) {
-  var rect = el.getBoundingClientRect();
+Scroll.prototype.generateFixedData = function generateFixedData (elData) {
   var deltaTransform = {
     y: Math.abs(elData.translate.y[1] - elData.translate.y[0]),
     x: Math.abs(elData.translate.x[1] - elData.translate.x[0]),
@@ -195,17 +202,18 @@ Scroll.prototype.generateFixedData = function generateFixedData (elData, el) {
   var sign = deltaTransform.y === 0 || elData.translate.y[1] === 0
     ? 1
     : Math.sign(elData.translate.y[1]);
-  var deltaTransformY = elData.translate.unit === 'px' ? deltaTransform.y : el.parentNode.clientHeight * deltaTransform.y / 100;
-  var denominator = this.viewport.height + deltaTransformY + sign * rect.height;
+  var deltaTransformY = elData.translate.unit === 'px'
+    ? deltaTransform.y
+    : elData.element.parentNode.clientHeight * deltaTransform.y / 100;
+  var denominator = this.viewport.height + deltaTransformY + sign * elData.rect.height;
 
-  elData.rect = rect;
-  elData.position = this.scrolled + rect.top - this.viewport.height;
+  elData.position = this.scrolled + elData.rect.top - this.viewport.height;
   elData.unitPerScroll = {
-    y: deltaTransform.y / denominator,
-    x: deltaTransform.x / denominator,
-    deg: deltaTransform.deg / denominator,
-    scale: deltaTransform.scale / denominator,
-    opacity: deltaTransform.opacity / denominator
+    y: (Math.sign(elData.translate.y[1]) * deltaTransform.y) / denominator,
+    x: (Math.sign(elData.translate.x[1]) * deltaTransform.x) / denominator,
+    deg: (Math.sign(elData.rotate[1]) * deltaTransform.deg) / denominator,
+    scale: ((elData.scale[0] > elData.scale[1] ? -1 : 1) * deltaTransform.scale) / denominator,
+    opacity: ((elData.opacity[0] > elData.opacity[1] ? -1 : 1) * deltaTransform.opacity) / denominator
   };
 };
 

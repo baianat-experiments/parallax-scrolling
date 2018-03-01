@@ -26,24 +26,26 @@ class Scroll {
   }
 
   _initElements() {
-    this.elements = this.elementsData.map(data => select(data.element));
+    this.elements = []
+    this.elementsData.forEach(data => {
+      const elm = select(data.element);
+      data.element = elm;
+      data.rect = elm.getBoundingClientRect();
+      this.addMissingTransformation(data);
+      this.generateFixedData(data);
+      elm.style.opacity = data.opacity[0];
+      elm.style.transform = `
+        translate3d(
+          ${data.translate.x[0]}${data.translate.unit},
+          ${data.translate.y[0]}${data.translate.unit},
+          0
+        )
+        rotate(${data.rotate[0]}deg)
+        scale(${data.scale[0]})`;
 
-    // eslint-disable-next-line
-    this.elements.forEach((el, index) => {
-      this.addMissingTransformation(this.elementsData[index]);
-      el.style.transform = `
-      translate3d(
-        ${this.elementsData[index].translate.x[0]}${this.elementsData[index].translate.unit},
-        ${this.elementsData[index].translate.y[0]}${this.elementsData[index].translate.unit},
-        0
-      )
-      rotate(${this.elementsData[index].rotate[0]}deg)
-      scale(${this.elementsData[index].scale[0]})`;
-      el.style.opacity = this.elementsData[index].opacity[0];
-
-      this.generateFixedData(this.elementsData[index], el)
-      this.observer.observe(el);
-    })
+      this.observer.observe(elm);
+      this.elements.push(data.element);
+    });
   }
 
   _initObserver() {
@@ -62,7 +64,7 @@ class Scroll {
   _initEvents() {
     this.scrolling = false;
     window.addEventListener('scroll', () => {
-      this.scrolled = window.scrollY
+      this.scrolled = window.scrollY;
       if (!this.scrolling) {
         window.requestAnimationFrame(() => {
           this.update();
@@ -79,6 +81,10 @@ class Scroll {
         width: window.innerWidth
       }
       this.scrolled = window.scrollY
+      this.elements.forEach((el, index) => {
+        this.generateFixedData(this.elementsData[index], el)
+      })
+      console.log(this.elementsData);
       this.update();
     }, 100));
   }
@@ -106,15 +112,17 @@ class Scroll {
   }
 
   getTransform(el) {
-    const ratio = this.scrolled - el.position;
+    const scroll = this.scrolled - el.position;
+    const uPerS = el.unitPerScroll;
 
-    return {
-      y: getInRange(el.translate.y[0] + Math.sign(el.translate.y[1]) * ratio * el.unitPerScroll.y, el.translate.y),
-      x: getInRange(el.translate.x[0] + Math.sign(el.translate.x[1]) * ratio * el.unitPerScroll.x, el.translate.x),
-      deg: getInRange(el.rotate[0] + Math.sign(el.rotate[1]) * ratio * el.unitPerScroll.deg, el.rotate),
-      scale: getInRange(el.scale[0] + (el.scale[0] > el.scale[1] ? -1 : 1) * ratio * el.unitPerScroll.scale, el.scale),
-      opacity: getInRange(el.opacity[0] + (el.opacity[0] > el.opacity[1] ? -1 : 1) * ratio * el.unitPerScroll.opacity, el.opacity)
-    }
+    const transform = {
+      y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
+      x: uPerS.x ? getInRange(el.translate.x[0] + scroll * el.unitPerScroll.x, el.translate.x) : 0,
+      deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * el.unitPerScroll.deg, el.rotate) : 0,
+      scale: uPerS.scale ? getInRange(el.scale[0] + scroll * el.unitPerScroll.scale, el.scale) : 1,
+      opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * el.unitPerScroll.opacity, el.opacity) : 1
+    };
+    return transform;
   }
 
   addMissingTransformation(el) {
@@ -141,8 +149,7 @@ class Scroll {
     }
   }
 
-  generateFixedData(elData, el) {
-    const rect = el.getBoundingClientRect()
+  generateFixedData(elData) {
     const deltaTransform = {
       y: Math.abs(elData.translate.y[1] - elData.translate.y[0]),
       x: Math.abs(elData.translate.x[1] - elData.translate.x[0]),
@@ -153,17 +160,18 @@ class Scroll {
     const sign = deltaTransform.y === 0 || elData.translate.y[1] === 0
       ? 1
       : Math.sign(elData.translate.y[1]);
-    const deltaTransformY = elData.translate.unit === 'px' ? deltaTransform.y : el.parentNode.clientHeight * deltaTransform.y / 100;
-    const denominator = this.viewport.height + deltaTransformY + sign * rect.height;
+    const deltaTransformY = elData.translate.unit === 'px'
+      ? deltaTransform.y
+      : elData.element.parentNode.clientHeight * deltaTransform.y / 100;
+    const denominator = this.viewport.height + deltaTransformY + sign * elData.rect.height;
 
-    elData.rect = rect;
-    elData.position = this.scrolled + rect.top - this.viewport.height;
+    elData.position = this.scrolled + elData.rect.top - this.viewport.height;
     elData.unitPerScroll = {
-      y: deltaTransform.y / denominator,
-      x: deltaTransform.x / denominator,
-      deg: deltaTransform.deg / denominator,
-      scale: deltaTransform.scale / denominator,
-      opacity: deltaTransform.opacity / denominator
+      y: (Math.sign(elData.translate.y[1]) * deltaTransform.y) / denominator,
+      x: (Math.sign(elData.translate.x[1]) * deltaTransform.x) / denominator,
+      deg: (Math.sign(elData.rotate[1]) * deltaTransform.deg) / denominator,
+      scale: ((elData.scale[0] > elData.scale[1] ? -1 : 1) * deltaTransform.scale) / denominator,
+      opacity: ((elData.opacity[0] > elData.opacity[1] ? -1 : 1) * deltaTransform.opacity) / denominator
     }
   }
 }

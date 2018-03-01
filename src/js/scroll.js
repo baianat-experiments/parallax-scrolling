@@ -92,7 +92,6 @@ class Scroll {
       const elData = this.elementsData[index];
       if (elData.class) el.classList.add('is-active');
       this.transform = this.getTransform(elData);
-      console.log(this.transform)
 
       el.style.transform = `
         translate3d(

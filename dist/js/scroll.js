@@ -141,7 +141,6 @@ Scroll.prototype.update = function update () {
     var elData = this$1.elementsData[index];
     if (elData.class) { el.classList.add('is-active'); }
     this$1.transform = this$1.getTransform(elData);
-    console.log(this$1.transform);
 
     el.style.transform = "\n        translate3d(\n          " + (this$1.transform.x) + (elData.translate.unit) + ",\n          " + (this$1.transform.y) + (elData.translate.unit) + ",\n          0\n        )\n        rotate(" + (this$1.transform.deg) + "deg)\n        scale(" + (this$1.transform.scale) + ")";
     el.style.opacity = this$1.transform.opacity;

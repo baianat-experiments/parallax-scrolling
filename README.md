@@ -61,6 +61,8 @@ You create new `Scroll` object and pass array of elements, that you want to add 
   element: '#square1',
   // Translate object values
   translate: {
+    // translate unit, it can be 'px' or '%', defaults is 'px'
+    unit: '%'
     // Y offsets, first value is the starting position, second is the ending position in px
     y: [-200, 200],
     // X offsets, first value is the starting position, second is the ending position in px
@@ -70,8 +72,8 @@ You create new `Scroll` object and pass array of elements, that you want to add 
   // Accepts value between -360 : 360.
   rotate: [-45, 45],
   // Scale values, first value is the starting scale, second is the ending scale
-  // Accepts value between 0 : 1, fractions are allowed.
-  scale: [0.5, 1],
+  // Accepts fraction values.
+  scale: [0.5, 1.4],
   // Opacity values, first value is the starting opacity, second is the ending opacity
   // Accepts value between 0 : 1, fractions are allowed
   opacity: [0, 1],

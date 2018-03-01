@@ -33,8 +33,9 @@ class Scroll {
       this.addMissingTransformation(this.elementsData[index]);
       el.style.transform = `
       translate3d(
-        ${this.elementsData[index].translate.x[0]}px,
-        ${this.elementsData[index].translate.y[0]}px, 0
+        ${this.elementsData[index].translate.x[0]}${this.elementsData[index].translate.unit},
+        ${this.elementsData[index].translate.y[0]}${this.elementsData[index].translate.unit},
+        0
       )
       rotate(${this.elementsData[index].rotate[0]}deg)
       scale(${this.elementsData[index].scale[0]})`;
@@ -91,12 +92,18 @@ class Scroll {
       const elData = this.elementsData[index];
       if (elData.class) el.classList.add('is-active');
       this.transform = this.getTransform(elData);
+      console.log(this.transform)
+
       el.style.transform = `
-        translate3d(${this.transform.x}px, ${this.transform.y}px, 0)
+        translate3d(
+          ${this.transform.x}${elData.translate.unit},
+          ${this.transform.y}${elData.translate.unit},
+          0
+        )
         rotate(${this.transform.deg}deg)
         scale(${this.transform.scale})`;
       el.style.opacity = this.transform.opacity;
-    })
+    });
   }
 
   getTransform(el) {
@@ -121,6 +128,9 @@ class Scroll {
     if (!el.translate.y) {
       el.translate.y = [0, 0]
     }
+    if (!el.translate.unit) {
+      el.translate.unit = 'px'
+    }
     if (!el.rotate) {
       el.rotate = [0, 0]
     }
@@ -144,7 +154,8 @@ class Scroll {
     const sign = deltaTransform.y === 0 || elData.translate.y[1] === 0
       ? 1
       : Math.sign(elData.translate.y[1]);
-    const denominator = this.viewport.height + deltaTransform.y + sign * rect.height;
+    const deltaTransformY = elData.translate.unit === 'px' ? deltaTransform.y : el.parentNode.clientHeight * deltaTransform.y / 100;
+    const denominator = this.viewport.height + deltaTransformY + sign * rect.height;
 
     elData.rect = rect;
     elData.position = this.scrolled + rect.top - this.viewport.height;

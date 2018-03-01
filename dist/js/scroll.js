@@ -83,7 +83,7 @@ Scroll.prototype._initElements = function _initElements () {
   // eslint-disable-next-line
   this.elements.forEach(function (el, index) {
     this$1.addMissingTransformation(this$1.elementsData[index]);
-    el.style.transform = "\n      translate3d(\n        " + (this$1.elementsData[index].translate.x[0]) + "px,\n        " + (this$1.elementsData[index].translate.y[0]) + "px, 0\n      )\n      rotate(" + (this$1.elementsData[index].rotate[0]) + "deg)\n      scale(" + (this$1.elementsData[index].scale[0]) + ")";
+    el.style.transform = "\n      translate3d(\n        " + (this$1.elementsData[index].translate.x[0]) + (this$1.elementsData[index].translate.unit) + ",\n        " + (this$1.elementsData[index].translate.y[0]) + (this$1.elementsData[index].translate.unit) + ",\n        0\n      )\n      rotate(" + (this$1.elementsData[index].rotate[0]) + "deg)\n      scale(" + (this$1.elementsData[index].scale[0]) + ")";
     el.style.opacity = this$1.elementsData[index].opacity[0];
 
     this$1.generateFixedData(this$1.elementsData[index], el);
@@ -141,7 +141,9 @@ Scroll.prototype.update = function update () {
     var elData = this$1.elementsData[index];
     if (elData.class) { el.classList.add('is-active'); }
     this$1.transform = this$1.getTransform(elData);
-    el.style.transform = "\n        translate3d(" + (this$1.transform.x) + "px, " + (this$1.transform.y) + "px, 0)\n        rotate(" + (this$1.transform.deg) + "deg)\n        scale(" + (this$1.transform.scale) + ")";
+    console.log(this$1.transform);
+
+    el.style.transform = "\n        translate3d(\n          " + (this$1.transform.x) + (elData.translate.unit) + ",\n          " + (this$1.transform.y) + (elData.translate.unit) + ",\n          0\n        )\n        rotate(" + (this$1.transform.deg) + "deg)\n        scale(" + (this$1.transform.scale) + ")";
     el.style.opacity = this$1.transform.opacity;
   });
 };
@@ -168,6 +170,9 @@ Scroll.prototype.addMissingTransformation = function addMissingTransformation (e
   if (!el.translate.y) {
     el.translate.y = [0, 0];
   }
+  if (!el.translate.unit) {
+    el.translate.unit = 'px';
+  }
   if (!el.rotate) {
     el.rotate = [0, 0];
   }
@@ -191,7 +196,8 @@ Scroll.prototype.generateFixedData = function generateFixedData (elData, el) {
   var sign = deltaTransform.y === 0 || elData.translate.y[1] === 0
     ? 1
     : Math.sign(elData.translate.y[1]);
-  var denominator = this.viewport.height + deltaTransform.y + sign * rect.height;
+  var deltaTransformY = elData.translate.unit === 'px' ? deltaTransform.y : el.parentNode.clientHeight * deltaTransform.y / 100;
+  var denominator = this.viewport.height + deltaTransformY + sign * rect.height;
 
   elData.rect = rect;
   elData.position = this.scrolled + rect.top - this.viewport.height;

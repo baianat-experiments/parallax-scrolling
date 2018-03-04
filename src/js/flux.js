@@ -56,10 +56,10 @@ class Flux {
     this.observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.intersectionRatio > 0) {
-          entry.target.classList.add('is-inViewPort');
+          entry.target.dataset.fluxInViewport = 'true';
           return;
         }
-        entry.target.classList.remove('is-inViewPort');
+        entry.target.dataset.fluxInViewport = '';
       });
     }, { threshold: [0, 0.25, 0.75, 1] });
   }
@@ -87,7 +87,6 @@ class Flux {
       this.elements.forEach((el, index) => {
         this.generateFixedData(this.elementsData[index], el)
       })
-      console.log(this.elementsData);
       this.update();
     }, 100));
   }
@@ -96,7 +95,7 @@ class Flux {
     this.elements.forEach((el, index) => {
       const elData = this.elementsData[index];
       if (
-        !el.classList.contains('is-inViewPort') &&
+        !el.dataset.fluxInViewport &&
         elData.class &&
         Object.values(elData.class)[0] === 'toggle'
       ) {
@@ -104,7 +103,7 @@ class Flux {
         return;
       }
 
-      if (!el.classList.contains('is-inViewPort')) {
+      if (!el.dataset.fluxInViewport) {
         return;
       }
 

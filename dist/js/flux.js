@@ -101,10 +101,10 @@ Flux.prototype._initObserver = function _initObserver () {
   this.observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       if (entry.intersectionRatio > 0) {
-        entry.target.classList.add('is-inViewPort');
+        entry.target.dataset.fluxInViewport = 'true';
         return;
       }
-      entry.target.classList.remove('is-inViewPort');
+      entry.target.dataset.fluxInViewport = '';
     });
   }, { threshold: [0, 0.25, 0.75, 1] });
 };
@@ -134,7 +134,6 @@ Flux.prototype._initEvents = function _initEvents () {
     this$1.elements.forEach(function (el, index) {
       this$1.generateFixedData(this$1.elementsData[index], el);
     });
-    console.log(this$1.elementsData);
     this$1.update();
   }, 100));
 };
@@ -145,7 +144,7 @@ Flux.prototype.update = function update () {
   this.elements.forEach(function (el, index) {
     var elData = this$1.elementsData[index];
     if (
-      !el.classList.contains('is-inViewPort') &&
+      !el.dataset.fluxInViewport &&
       elData.class &&
       Object.values(elData.class)[0] === 'toggle'
     ) {
@@ -153,7 +152,7 @@ Flux.prototype.update = function update () {
       return;
     }
 
-    if (!el.classList.contains('is-inViewPort')) {
+    if (!el.dataset.fluxInViewport) {
       return;
     }
 

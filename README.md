@@ -15,7 +15,7 @@ The following are supported effects
 
 ## Examples
 
-[Example](https://baianat.github.io/scroll.js/)
+[Example](https://baianat.github.io/flux.js/)
 
 ## Getting Started
 
@@ -35,16 +35,16 @@ yarn add @baianat/veer
 ``` html
 <body>
   ...
-  <script type="text/javascript" src="dist/js/scroll.js"></script>
+  <script type="text/javascript" src="dist/js/flux.js"></script>
 </body>
 ```
 
 ### Usage
 
-You create new `Scroll` object and pass array of elements, that you want to add effect to it.
+You create new `Flux` object and pass array of elements, that you want to add effect to it.
 
 ``` javascript
-  const scroller = new Scroll(
+  const fluxer = new Flux(
     [{
       // Item 1 option
     }, {

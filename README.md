@@ -24,10 +24,10 @@ The following are supported effects
 First step is to install it using yarn or npm
 
 ```bash
-npm install @baianat/veer
+npm install @baianat/flux
 
 # or use yarn
-yarn add @baianat/veer
+yarn add @baianat/flux
 ```
 
 ### Include necessary files

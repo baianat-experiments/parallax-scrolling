@@ -45,10 +45,14 @@ function getInRange(value, boundaries) {
   return Math.max(Math.min(value, max), min);
 }
 
-var Flux = function Flux(elmData) {
+var Flux = function Flux(elmData, ref) {
   if ( elmData === void 0 ) elmData = [];
+  var breakpoint = ref.breakpoint; if ( breakpoint === void 0 ) breakpoint = 0;
 
   this.elementsData = elmData;
+  this.settings = {
+    breakpoint: breakpoint
+  };
   this._init();
 };
 
@@ -78,6 +82,7 @@ Flux.prototype._init = function _init () {
 Flux.prototype._initElements = function _initElements () {
     var this$1 = this;
 
+  this.mediaQuery = window.matchMedia(("(min-width: " + (this.settings.breakpoint) + "px)"));
   this.elements = [];
   this.elementsData.forEach(function (data) {
     var elm = select(data.element);
@@ -131,8 +136,11 @@ Flux.prototype._initEvents = function _initEvents () {
       width: window.innerWidth
     };
     this$1.scrolled = window.scrollY;
-    this$1.elements.forEach(function (el, index) {
-      this$1.generateFixedData(this$1.elementsData[index], el);
+    this$1.elementsData.forEach(function (data) {
+      if (!data.omit) {
+        data.rect = data.element.getBoundingClientRect();
+        this$1.generateFixedData(data);
+      }
     });
     this$1.update();
   }, 100));
@@ -159,6 +167,12 @@ Flux.prototype.update = function update () {
     if (elData.class) {
       var className = typeof elData.class === 'string' ? elData.class : Object.keys(elData.class)[0];
       el.classList.add(className);
+    }
+
+    if (!this$1.mediaQuery.matches) {
+      elData.element.style.transform = '';
+      elData.element.style.opacity = '';
+      return;
     }
 
     if (!elData.omit) {

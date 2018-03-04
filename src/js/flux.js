@@ -1,8 +1,11 @@
 import { select, throttle, getInRange } from './util'
 
 class Flux {
-  constructor(elmData = []) {
+  constructor(elmData = [], { breakpoint = 0 }) {
     this.elementsData = elmData;
+    this.settings = {
+      breakpoint
+    }
     this._init();
   }
 
@@ -26,6 +29,7 @@ class Flux {
   }
 
   _initElements() {
+    this.mediaQuery = window.matchMedia(`(min-width: ${this.settings.breakpoint}px)`);
     this.elements = []
     this.elementsData.forEach(data => {
       const elm = select(data.element);
@@ -84,9 +88,12 @@ class Flux {
         width: window.innerWidth
       }
       this.scrolled = window.scrollY
-      this.elements.forEach((el, index) => {
-        this.generateFixedData(this.elementsData[index], el)
-      })
+      this.elementsData.forEach(data => {
+        if (!data.omit) {
+          data.rect = data.element.getBoundingClientRect();
+          this.generateFixedData(data);
+        }
+      });
       this.update();
     }, 100));
   }
@@ -110,6 +117,12 @@ class Flux {
       if (elData.class) {
         const className = typeof elData.class === 'string' ? elData.class : Object.keys(elData.class)[0];
         el.classList.add(className);
+      }
+
+      if (!this.mediaQuery.matches) {
+        elData.element.style.transform = '';
+        elData.element.style.opacity = '';
+        return;
       }
 
       if (!elData.omit) {

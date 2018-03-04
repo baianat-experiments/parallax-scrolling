@@ -1,7 +1,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 	typeof define === 'function' && define.amd ? define(factory) :
-	(global.Scroll = factory());
+	(global.Flux = factory());
 }(this, (function () { 'use strict';
 
 /**
@@ -45,14 +45,14 @@ function getInRange(value, boundaries) {
   return Math.max(Math.min(value, max), min);
 }
 
-var Scroll = function Scroll(elmData) {
+var Flux = function Flux(elmData) {
   if ( elmData === void 0 ) elmData = [];
 
   this.elementsData = elmData;
   this._init();
 };
 
-Scroll.prototype.addElement = function addElement (elmData) {
+Flux.prototype.addElement = function addElement (elmData) {
     var this$1 = this;
 
   this.elementsData.push(elmData);
@@ -60,7 +60,7 @@ Scroll.prototype.addElement = function addElement (elmData) {
   setTimeout(function () { return this$1.update(); }, 500);
 };
 
-Scroll.prototype._init = function _init () {
+Flux.prototype._init = function _init () {
     var this$1 = this;
 
   this.scrolled = window.scrollY;
@@ -75,7 +75,7 @@ Scroll.prototype._init = function _init () {
   setTimeout(function () { return this$1.update(); }, 500);
 };
 
-Scroll.prototype._initElements = function _initElements () {
+Flux.prototype._initElements = function _initElements () {
     var this$1 = this;
 
   this.elements = [];
@@ -96,7 +96,7 @@ Scroll.prototype._initElements = function _initElements () {
   });
 };
 
-Scroll.prototype._initObserver = function _initObserver () {
+Flux.prototype._initObserver = function _initObserver () {
   // eslint-disable-next-line
   this.observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
@@ -109,7 +109,7 @@ Scroll.prototype._initObserver = function _initObserver () {
   }, { threshold: [0, 0.25, 0.75, 1] });
 };
 
-Scroll.prototype._initEvents = function _initEvents () {
+Flux.prototype._initEvents = function _initEvents () {
     var this$1 = this;
 
   this.scrolling = false;
@@ -139,7 +139,7 @@ Scroll.prototype._initEvents = function _initEvents () {
   }, 100));
 };
 
-Scroll.prototype.update = function update () {
+Flux.prototype.update = function update () {
     var this$1 = this;
 
   this.elements.forEach(function (el, index) {
@@ -170,7 +170,7 @@ Scroll.prototype.update = function update () {
   });
 };
 
-Scroll.prototype.getTransform = function getTransform (el) {
+Flux.prototype.getTransform = function getTransform (el) {
   var scroll = this.scrolled - el.position;
   var uPerS = el.unitPerScroll;
 
@@ -184,7 +184,7 @@ Scroll.prototype.getTransform = function getTransform (el) {
   return transform;
 };
 
-Scroll.prototype.addMissingTransformation = function addMissingTransformation (el) {
+Flux.prototype.addMissingTransformation = function addMissingTransformation (el) {
   if (!el.translate) {
     el.translate = {};
   }
@@ -208,7 +208,7 @@ Scroll.prototype.addMissingTransformation = function addMissingTransformation (e
   }
 };
 
-Scroll.prototype.generateFixedData = function generateFixedData (elData) {
+Flux.prototype.generateFixedData = function generateFixedData (elData) {
   var deltaTransform = {
     y: Math.abs(elData.translate.y[1] - elData.translate.y[0]),
     x: Math.abs(elData.translate.x[1] - elData.translate.x[0]),
@@ -234,6 +234,6 @@ Scroll.prototype.generateFixedData = function generateFixedData (elData) {
   };
 };
 
-return Scroll;
+return Flux;
 
 })));

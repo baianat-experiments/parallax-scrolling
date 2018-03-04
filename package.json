@@ -1,10 +1,10 @@
 {
-  "name": "@baianat/scroll.js",
+  "name": "@baianat/flux.js",
   "version": "0.0.0",
   "author": "Abdelrahman Ismail <abdelrahman3d@gmail.com>",
-  "main": "dist/js/scroll.js",
+  "main": "dist/js/flux.js",
   "license": "MIT",
-  "keywords": ["scroll", "parallax"],
+  "keywords": ["scroll", "parallax", "flux"],
   "maintainers": [
     {
       "name": "Abdelrahman3D",

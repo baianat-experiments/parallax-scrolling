@@ -55,7 +55,7 @@ gulp.task('styles', () => {
     }))
     .pipe(autoprefixer('last 5 version'))
     .pipe(rename({
-      basename: 'scroll',
+      basename: 'flux',
       suffix: isProduction() ? '.min' : '',
       extname: '.css'
     }))
@@ -71,10 +71,10 @@ gulp.task('scripts', () => {
   return gulp.src('src/js/**/*.js')
     .pipe(plumber())
     .pipe(rollup({
-      input: 'src/js/scroll.js',
+      input: 'src/js/flux.js',
       output: {
         format: 'umd',
-        name: 'Scroll'
+        name: 'Flux'
       },
       allowRealFiles: true,
       plugins: [
@@ -82,7 +82,7 @@ gulp.task('scripts', () => {
       ]
     }))
     .pipe(rename({
-      basename: 'scroll',
+      basename: 'flux',
       suffix: isProduction() ? '.min' : '',
       extname: '.js'
     }))

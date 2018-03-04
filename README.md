@@ -1,6 +1,6 @@
-# Scroll.js
+# Flux.js
 
-Scroll.js is a JavaScript package that enables parallax scrolling effect on selected elements.
+Flux.js is a JavaScript package that enables parallax scrolling effect on selected elements.
 With optimizations to Reduce **Jank**.
 
 ## Supported Effects

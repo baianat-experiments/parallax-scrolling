@@ -1,6 +1,6 @@
 import { select, throttle, getInRange } from './util'
 
-class Scroll {
+class Flux {
   constructor(elmData = []) {
     this.elementsData = elmData;
     this._init();
@@ -193,4 +193,4 @@ class Scroll {
   }
 }
 
-export default Scroll;
+export default Flux;

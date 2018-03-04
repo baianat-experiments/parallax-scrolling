@@ -30,18 +30,21 @@ class Scroll {
     this.elementsData.forEach(data => {
       const elm = select(data.element);
       data.element = elm;
-      data.rect = elm.getBoundingClientRect();
-      this.addMissingTransformation(data);
-      this.generateFixedData(data);
-      elm.style.opacity = data.opacity[0];
-      elm.style.transform = `
-        translate3d(
-          ${data.translate.x[0]}${data.translate.unit},
-          ${data.translate.y[0]}${data.translate.unit},
-          0
-        )
-        rotate(${data.rotate[0]}deg)
-        scale(${data.scale[0]})`;
+
+      if (!data.omit) {
+        data.rect = elm.getBoundingClientRect();
+        this.addMissingTransformation(data);
+        this.generateFixedData(data);
+        elm.style.opacity = data.opacity[0];
+        elm.style.transform = `
+          translate3d(
+            ${data.translate.x[0]}${data.translate.unit},
+            ${data.translate.y[0]}${data.translate.unit},
+            0
+          )
+          rotate(${data.rotate[0]}deg)
+          scale(${data.scale[0]})`;
+      }
 
       this.observer.observe(elm);
       this.elements.push(data.element);
@@ -91,23 +94,37 @@ class Scroll {
 
   update() {
     this.elements.forEach((el, index) => {
-      if (!el.classList.contains('is-inViewPort')) {
-        el.classList.remove(this.elementsData[index].class);
+      const elData = this.elementsData[index];
+      if (
+        !el.classList.contains('is-inViewPort') &&
+        elData.class &&
+        Object.values(elData.class)[0] === 'toggle'
+      ) {
+        el.classList.remove(Object.keys(elData.class)[0]);
         return;
       }
-      const elData = this.elementsData[index];
-      if (elData.class) el.classList.add('is-active');
-      this.transform = this.getTransform(elData);
 
-      el.style.transform = `
-        translate3d(
-          ${this.transform.x}${elData.translate.unit},
-          ${this.transform.y}${elData.translate.unit},
-          0
-        )
-        rotate(${this.transform.deg}deg)
-        scale(${this.transform.scale})`;
-      el.style.opacity = this.transform.opacity;
+      if (!el.classList.contains('is-inViewPort')) {
+        return;
+      }
+
+      if (elData.class) {
+        const className = typeof elData.class === 'string' ? elData.class : Object.keys(elData.class)[0];
+        el.classList.add(className);
+      }
+
+      if (!elData.omit) {
+        this.transform = this.getTransform(elData);
+        el.style.transform = `
+          translate3d(
+            ${this.transform.x}${elData.translate.unit},
+            ${this.transform.y}${elData.translate.unit},
+            0
+          )
+          rotate(${this.transform.deg}deg)
+          scale(${this.transform.scale})`;
+        el.style.opacity = this.transform.opacity;
+      }
     });
   }
 

@@ -82,11 +82,14 @@ Scroll.prototype._initElements = function _initElements () {
   this.elementsData.forEach(function (data) {
     var elm = select(data.element);
     data.element = elm;
-    data.rect = elm.getBoundingClientRect();
-    this$1.addMissingTransformation(data);
-    this$1.generateFixedData(data);
-    elm.style.opacity = data.opacity[0];
-    elm.style.transform = "\n        translate3d(\n          " + (data.translate.x[0]) + (data.translate.unit) + ",\n          " + (data.translate.y[0]) + (data.translate.unit) + ",\n          0\n        )\n        rotate(" + (data.rotate[0]) + "deg)\n        scale(" + (data.scale[0]) + ")";
+
+    if (!data.omit) {
+      data.rect = elm.getBoundingClientRect();
+      this$1.addMissingTransformation(data);
+      this$1.generateFixedData(data);
+      elm.style.opacity = data.opacity[0];
+      elm.style.transform = "\n          translate3d(\n            " + (data.translate.x[0]) + (data.translate.unit) + ",\n            " + (data.translate.y[0]) + (data.translate.unit) + ",\n            0\n          )\n          rotate(" + (data.rotate[0]) + "deg)\n          scale(" + (data.scale[0]) + ")";
+    }
 
     this$1.observer.observe(elm);
     this$1.elements.push(data.element);
@@ -140,16 +143,30 @@ Scroll.prototype.update = function update () {
     var this$1 = this;
 
   this.elements.forEach(function (el, index) {
-    if (!el.classList.contains('is-inViewPort')) {
-      el.classList.remove(this$1.elementsData[index].class);
+    var elData = this$1.elementsData[index];
+    if (
+      !el.classList.contains('is-inViewPort') &&
+      elData.class &&
+      Object.values(elData.class)[0] === 'toggle'
+    ) {
+      el.classList.remove(Object.keys(elData.class)[0]);
       return;
     }
-    var elData = this$1.elementsData[index];
-    if (elData.class) { el.classList.add('is-active'); }
-    this$1.transform = this$1.getTransform(elData);
 
-    el.style.transform = "\n        translate3d(\n          " + (this$1.transform.x) + (elData.translate.unit) + ",\n          " + (this$1.transform.y) + (elData.translate.unit) + ",\n          0\n        )\n        rotate(" + (this$1.transform.deg) + "deg)\n        scale(" + (this$1.transform.scale) + ")";
-    el.style.opacity = this$1.transform.opacity;
+    if (!el.classList.contains('is-inViewPort')) {
+      return;
+    }
+
+    if (elData.class) {
+      var className = typeof elData.class === 'string' ? elData.class : Object.keys(elData.class)[0];
+      el.classList.add(className);
+    }
+
+    if (!elData.omit) {
+      this$1.transform = this$1.getTransform(elData);
+      el.style.transform = "\n          translate3d(\n            " + (this$1.transform.x) + (elData.translate.unit) + ",\n            " + (this$1.transform.y) + (elData.translate.unit) + ",\n            0\n          )\n          rotate(" + (this$1.transform.deg) + "deg)\n          scale(" + (this$1.transform.scale) + ")";
+      el.style.opacity = this$1.transform.opacity;
+    }
   });
 };
 

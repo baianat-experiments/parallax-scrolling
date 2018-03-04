@@ -78,7 +78,12 @@ You create new `Scroll` object and pass array of elements, that you want to add 
   // Accepts value between 0 : 1, fractions are allowed
   opacity: [0, 1],
   // A class to be added when the element is in the viewport
-  class: 'is-active'
+  // It you want to toggle the class state when element in/out of the viewport
+  // You can pass an object {'is-active': 'toggle'}
+  class: 'is-active',
+  // To disable transform and opacity changes.
+  // It usually uses when working with class.
+  omit: true
 }
 ```
 

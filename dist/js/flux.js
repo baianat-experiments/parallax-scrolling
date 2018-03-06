@@ -47,6 +47,7 @@ function getInRange(value, boundaries) {
 
 var Flux = function Flux(elmData, ref) {
   if ( elmData === void 0 ) elmData = [];
+  if ( ref === void 0 ) ref = {};
   var breakpoint = ref.breakpoint; if ( breakpoint === void 0 ) breakpoint = 0;
 
   this.elementsData = elmData;
@@ -111,13 +112,15 @@ Flux.prototype._initObserver = function _initObserver () {
       }
       entry.target.dataset.fluxInViewport = '';
     });
-  }, { threshold: [0, 0.25, 0.75, 1] });
+  });
 };
 
 Flux.prototype._initEvents = function _initEvents () {
     var this$1 = this;
 
   this.scrolling = false;
+
+  // scroll optimization https://developer.mozilla.org/en-US/docs/Web/Events/scroll
   window.addEventListener('scroll', function () {
     this$1.scrolled = window.scrollY;
     if (!this$1.scrolling) {
@@ -125,7 +128,6 @@ Flux.prototype._initEvents = function _initEvents () {
         this$1.update();
         this$1.scrolling = false;
       });
-
       this$1.scrolling = true;
     }
   });

@@ -49,11 +49,14 @@ You create new `Flux` object and pass array of elements, that you want to add ef
       // Item 1 option
     }, {
       // Item 2 option
-    }, {
+    }],
+
+    // settings
+    {
       // breakpoint disables transformations and opacity.
       // If you working with class it will still work.
       breakpoint: 500
-    }]
+    }
   );
 ```
 

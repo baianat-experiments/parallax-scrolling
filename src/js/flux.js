@@ -1,7 +1,7 @@
 import { select, throttle, getInRange } from './util'
 
 class Flux {
-  constructor(elmData = [], { breakpoint = 0 }) {
+  constructor(elmData = [], { breakpoint = 0 } = {}) {
     this.elementsData = elmData;
     this.settings = {
       breakpoint
@@ -65,11 +65,13 @@ class Flux {
         }
         entry.target.dataset.fluxInViewport = '';
       });
-    }, { threshold: [0, 0.25, 0.75, 1] });
+    });
   }
 
   _initEvents() {
     this.scrolling = false;
+
+    // scroll optimization https://developer.mozilla.org/en-US/docs/Web/Events/scroll
     window.addEventListener('scroll', () => {
       this.scrolled = window.scrollY;
       if (!this.scrolling) {
@@ -77,7 +79,6 @@ class Flux {
           this.update();
           this.scrolling = false;
         });
-
         this.scrolling = true;
       }
     });

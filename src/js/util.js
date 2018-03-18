@@ -46,9 +46,9 @@ export function throttle(func, limit = 16) {
   };
 }
 
-export function getInRange(value, boundaries) {
-  const max = boundaries[0] > boundaries[1] ? boundaries[0] : boundaries[1];
-  const min = boundaries[0] < boundaries[1] ? boundaries[0] : boundaries[1];
+export function getInRange(value, [start, end]) {
+  const max = start > end ? start : end;
+  const min = start < end ? start : end;
 
   return Math.max(Math.min(value, max), min);
 }

@@ -38,9 +38,12 @@ function throttle(func, limit) {
   };
 }
 
-function getInRange(value, boundaries) {
-  var max = boundaries[0] > boundaries[1] ? boundaries[0] : boundaries[1];
-  var min = boundaries[0] < boundaries[1] ? boundaries[0] : boundaries[1];
+function getInRange(value, ref) {
+  var start = ref[0];
+  var end = ref[1];
+
+  var max = start > end ? start : end;
+  var min = start < end ? start : end;
 
   return Math.max(Math.min(value, max), min);
 }

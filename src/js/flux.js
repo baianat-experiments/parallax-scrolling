@@ -81,6 +81,8 @@ class Flux {
         });
         this.scrolling = true;
       }
+    }, {
+      passive: true
     });
 
     window.addEventListener('resize', throttle(() => {

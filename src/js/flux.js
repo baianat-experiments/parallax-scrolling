@@ -25,7 +25,11 @@ class Flux {
     this._initObserver();
     this._initElements();
     this._initEvents();
-    setTimeout(() => this.update(), 500);
+    document.onreadystatechange = () => {
+      if (document.readyState === 'complete') {
+        this.update();
+      }
+    };
   }
 
   _initElements() {
@@ -145,7 +149,7 @@ class Flux {
 
   getTransform(el) {
     const scroll = this.scrolled - el.position;
-    const uPerS = el.unitPerScroll;
+    const uPerS = el.unitPerScroll; // unit per scroll
 
     const transform = {
       y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
@@ -194,7 +198,8 @@ class Flux {
       : Math.sign(elData.translate.y[1]);
     const deltaTransformY = elData.translate.unit === 'px'
       ? deltaTransform.y
-      : elData.element.parentNode.clientHeight * deltaTransform.y / 100;
+      : elData.rect.height * deltaTransform.y / 100;
+    
     const denominator = this.viewport.height + deltaTransformY + sign * elData.rect.height;
 
     elData.position = this.scrolled + elData.rect.top - this.viewport.height;

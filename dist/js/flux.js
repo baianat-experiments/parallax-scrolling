@@ -80,7 +80,11 @@ Flux.prototype._init = function _init () {
   this._initObserver();
   this._initElements();
   this._initEvents();
-  setTimeout(function () { return this$1.update(); }, 500);
+  document.onreadystatechange = function () {
+    if (document.readyState === 'complete') {
+      this$1.update();
+    }
+  };
 };
 
 Flux.prototype._initElements = function _initElements () {
@@ -133,6 +137,8 @@ Flux.prototype._initEvents = function _initEvents () {
       });
       this$1.scrolling = true;
     }
+  }, {
+    passive: true
   });
 
   window.addEventListener('resize', throttle(function () {
@@ -190,7 +196,7 @@ Flux.prototype.update = function update () {
 
 Flux.prototype.getTransform = function getTransform (el) {
   var scroll = this.scrolled - el.position;
-  var uPerS = el.unitPerScroll;
+  var uPerS = el.unitPerScroll; // unit per scroll
 
   var transform = {
     y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
@@ -239,7 +245,8 @@ Flux.prototype.generateFixedData = function generateFixedData (elData) {
     : Math.sign(elData.translate.y[1]);
   var deltaTransformY = elData.translate.unit === 'px'
     ? deltaTransform.y
-    : elData.element.parentNode.clientHeight * deltaTransform.y / 100;
+    : elData.rect.height * deltaTransform.y / 100;
+    
   var denominator = this.viewport.height + deltaTransformY + sign * elData.rect.height;
 
   elData.position = this.scrolled + elData.rect.top - this.viewport.height;

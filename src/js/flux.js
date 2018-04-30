@@ -1,4 +1,4 @@
-import { select, throttle, getInRange } from './util'
+import { select, throttle, getInRange, getAbsoluteValue, valuePerScroll } from './util'
 
 class Flux {
   constructor(elmData = [], { breakpoint = 0 } = {}) {
@@ -21,13 +21,12 @@ class Flux {
       height: window.innerHeight,
       width: window.innerWidth
     }
-
-    this._initObserver();
-    this._initElements();
-    this._initEvents();
     document.onreadystatechange = () => {
       if (document.readyState === 'complete') {
-        this.update();
+        this._initObserver();
+        this._initElements();
+        this._initEvents();
+        this.update(true);
       }
     };
   }
@@ -43,15 +42,6 @@ class Flux {
         data.rect = elm.getBoundingClientRect();
         this.addMissingTransformation(data);
         this.generateFixedData(data);
-        elm.style.opacity = data.opacity[0];
-        elm.style.transform = `
-          translate3d(
-            ${data.translate.x[0]}${data.translate.unit},
-            ${data.translate.y[0]}${data.translate.unit},
-            0
-          )
-          rotate(${data.rotate[0]}deg)
-          scale(${data.scale[0]})`;
       }
 
       this.observer.observe(elm);
@@ -63,7 +53,7 @@ class Flux {
     // eslint-disable-next-line
     this.observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
-        if (entry.intersectionRatio > 0) {
+        if (entry.isIntersecting) {
           entry.target.dataset.fluxInViewport = 'true';
           return;
         }
@@ -105,7 +95,7 @@ class Flux {
     }, 100));
   }
 
-  update() {
+  update(force = false) {
     this.elements.forEach((el, index) => {
       const elData = this.elementsData[index];
       if (
@@ -117,7 +107,7 @@ class Flux {
         return;
       }
 
-      if (!el.dataset.fluxInViewport) {
+      if (!el.dataset.fluxInViewport && !force) {
         return;
       }
 
@@ -135,11 +125,8 @@ class Flux {
       if (!elData.omit) {
         this.transform = this.getTransform(elData);
         el.style.transform = `
-          translate3d(
-            ${this.transform.x}${elData.translate.unit},
-            ${this.transform.y}${elData.translate.unit},
-            0
-          )
+          translateX(${this.transform.x}${elData.translate.unit})
+          translateY(${this.transform.y}${elData.translate.unit})
           rotate(${this.transform.deg}deg)
           scale(${this.transform.scale})`;
         el.style.opacity = this.transform.opacity;
@@ -150,13 +137,13 @@ class Flux {
   getTransform(el) {
     const scroll = this.scrolled - el.position;
     const uPerS = el.unitPerScroll; // unit per scroll
-
+    
     const transform = {
       y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
-      x: uPerS.x ? getInRange(el.translate.x[0] + scroll * el.unitPerScroll.x, el.translate.x) : 0,
-      deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * el.unitPerScroll.deg, el.rotate) : 0,
-      scale: uPerS.scale ? getInRange(el.scale[0] + scroll * el.unitPerScroll.scale, el.scale) : 1,
-      opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * el.unitPerScroll.opacity, el.opacity) : 1
+      x: uPerS.x ? getInRange(el.translate.x[0] + scroll * uPerS.x, el.translate.x) : 0,
+      deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * uPerS.deg, el.rotate) : 0,
+      scale: uPerS.scale ? getInRange(el.scale[0] + scroll * uPerS.scale, el.scale) : 1,
+      opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * uPerS.opacity, el.opacity) : 1
     };
     return transform;
   }
@@ -174,41 +161,33 @@ class Flux {
     if (!el.translate.unit) {
       el.translate.unit = 'px'
     }
-    if (!el.rotate) {
-      el.rotate = [0, 0]
-    }
-    if (!el.opacity) {
-      el.opacity = [1, 1]
-    }
-    if (!el.scale) {
-      el.scale = [1, 1]
-    }
   }
 
   generateFixedData(elData) {
-    const deltaTransform = {
-      y: Math.abs(elData.translate.y[1] - elData.translate.y[0]),
-      x: Math.abs(elData.translate.x[1] - elData.translate.x[0]),
-      deg: Math.abs(elData.rotate[1] - elData.rotate[0]),
-      scale: Math.abs(elData.scale[1] - elData.scale[0]),
-      opacity: Math.abs(elData.opacity[1] - elData.opacity[0])
+    let initTranslateY = 0;
+    let deltaTransformY = 0;
+    if (elData.translate && elData.translate.y) {
+      initTranslateY = getAbsoluteValue(
+        elData.translate.y[0],
+        elData.translate.unit,
+        elData.rect.height
+      )
+      deltaTransformY = getAbsoluteValue(
+        elData.translate.y[1] - elData.translate.y[0] ,
+        elData.translate.unit,
+        elData.rect.height
+      )
     }
-    const sign = deltaTransform.y === 0 || elData.translate.y[1] === 0
-      ? 1
-      : Math.sign(elData.translate.y[1]);
-    const deltaTransformY = elData.translate.unit === 'px'
-      ? deltaTransform.y
-      : elData.rect.height * deltaTransform.y / 100;
-    
-    const denominator = this.viewport.height + deltaTransformY + sign * elData.rect.height;
 
-    elData.position = this.scrolled + elData.rect.top - this.viewport.height;
+    const denominator = this.viewport.height + deltaTransformY + elData.rect.height;
+    elData.position = this.scrolled + elData.rect.top + initTranslateY - this.viewport.height;
+
     elData.unitPerScroll = {
-      y: (Math.sign(elData.translate.y[1]) * deltaTransform.y) / denominator,
-      x: (Math.sign(elData.translate.x[1]) * deltaTransform.x) / denominator,
-      deg: (Math.sign(elData.rotate[1]) * deltaTransform.deg) / denominator,
-      scale: ((elData.scale[0] > elData.scale[1] ? -1 : 1) * deltaTransform.scale) / denominator,
-      opacity: ((elData.opacity[0] > elData.opacity[1] ? -1 : 1) * deltaTransform.opacity) / denominator
+      y: elData.translate.y ? valuePerScroll(elData.translate.y, denominator) : undefined,
+      x: elData.translate.x ? valuePerScroll(elData.translate.x, denominator): undefined,
+      deg: elData.rotate ? valuePerScroll(elData.rotate, denominator) : undefined,
+      scale: elData.scale ? valuePerScroll(elData.scale, denominator) : undefined,
+      opacity: elData.opacity ? valuePerScroll(elData.opacity, denominator) : undefined
     }
   }
 }

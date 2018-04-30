@@ -48,6 +48,16 @@ function getInRange(value, ref) {
   return Math.max(Math.min(value, max), min);
 }
 
+function getAbsoluteValue(value, unit, elHeight) {
+  return unit === 'px' ? value : value / 100 * elHeight;
+}
+function valuePerScroll(ref, denominator) {
+  var start = ref[0];
+  var end = ref[1];
+
+  return (end - start) / denominator 
+}
+
 var Flux = function Flux(elmData, ref) {
   if ( elmData === void 0 ) elmData = [];
   if ( ref === void 0 ) ref = {};
@@ -76,13 +86,12 @@ Flux.prototype._init = function _init () {
     height: window.innerHeight,
     width: window.innerWidth
   };
-
-  this._initObserver();
-  this._initElements();
-  this._initEvents();
   document.onreadystatechange = function () {
     if (document.readyState === 'complete') {
-      this$1.update();
+      this$1._initObserver();
+      this$1._initElements();
+      this$1._initEvents();
+      this$1.update(true);
     }
   };
 };
@@ -100,8 +109,6 @@ Flux.prototype._initElements = function _initElements () {
       data.rect = elm.getBoundingClientRect();
       this$1.addMissingTransformation(data);
       this$1.generateFixedData(data);
-      elm.style.opacity = data.opacity[0];
-      elm.style.transform = "\n          translate3d(\n            " + (data.translate.x[0]) + (data.translate.unit) + ",\n            " + (data.translate.y[0]) + (data.translate.unit) + ",\n            0\n          )\n          rotate(" + (data.rotate[0]) + "deg)\n          scale(" + (data.scale[0]) + ")";
     }
 
     this$1.observer.observe(elm);
@@ -113,7 +120,7 @@ Flux.prototype._initObserver = function _initObserver () {
   // eslint-disable-next-line
   this.observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
-      if (entry.intersectionRatio > 0) {
+      if (entry.isIntersecting) {
         entry.target.dataset.fluxInViewport = 'true';
         return;
       }
@@ -157,8 +164,9 @@ Flux.prototype._initEvents = function _initEvents () {
   }, 100));
 };
 
-Flux.prototype.update = function update () {
+Flux.prototype.update = function update (force) {
     var this$1 = this;
+    if ( force === void 0 ) force = false;
 
   this.elements.forEach(function (el, index) {
     var elData = this$1.elementsData[index];
@@ -171,7 +179,7 @@ Flux.prototype.update = function update () {
       return;
     }
 
-    if (!el.dataset.fluxInViewport) {
+    if (!el.dataset.fluxInViewport && !force) {
       return;
     }
 
@@ -188,7 +196,7 @@ Flux.prototype.update = function update () {
 
     if (!elData.omit) {
       this$1.transform = this$1.getTransform(elData);
-      el.style.transform = "\n          translate3d(\n            " + (this$1.transform.x) + (elData.translate.unit) + ",\n            " + (this$1.transform.y) + (elData.translate.unit) + ",\n            0\n          )\n          rotate(" + (this$1.transform.deg) + "deg)\n          scale(" + (this$1.transform.scale) + ")";
+      el.style.transform = "\n          translateX(" + (this$1.transform.x) + (elData.translate.unit) + ")\n          translateY(" + (this$1.transform.y) + (elData.translate.unit) + ")\n          rotate(" + (this$1.transform.deg) + "deg)\n          scale(" + (this$1.transform.scale) + ")";
       el.style.opacity = this$1.transform.opacity;
     }
   });
@@ -197,13 +205,13 @@ Flux.prototype.update = function update () {
 Flux.prototype.getTransform = function getTransform (el) {
   var scroll = this.scrolled - el.position;
   var uPerS = el.unitPerScroll; // unit per scroll
-
+    
   var transform = {
     y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
-    x: uPerS.x ? getInRange(el.translate.x[0] + scroll * el.unitPerScroll.x, el.translate.x) : 0,
-    deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * el.unitPerScroll.deg, el.rotate) : 0,
-    scale: uPerS.scale ? getInRange(el.scale[0] + scroll * el.unitPerScroll.scale, el.scale) : 1,
-    opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * el.unitPerScroll.opacity, el.opacity) : 1
+    x: uPerS.x ? getInRange(el.translate.x[0] + scroll * uPerS.x, el.translate.x) : 0,
+    deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * uPerS.deg, el.rotate) : 0,
+    scale: uPerS.scale ? getInRange(el.scale[0] + scroll * uPerS.scale, el.scale) : 1,
+    opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * uPerS.opacity, el.opacity) : 1
   };
   return transform;
 };
@@ -221,41 +229,33 @@ Flux.prototype.addMissingTransformation = function addMissingTransformation (el)
   if (!el.translate.unit) {
     el.translate.unit = 'px';
   }
-  if (!el.rotate) {
-    el.rotate = [0, 0];
-  }
-  if (!el.opacity) {
-    el.opacity = [1, 1];
-  }
-  if (!el.scale) {
-    el.scale = [1, 1];
-  }
 };
 
 Flux.prototype.generateFixedData = function generateFixedData (elData) {
-  var deltaTransform = {
-    y: Math.abs(elData.translate.y[1] - elData.translate.y[0]),
-    x: Math.abs(elData.translate.x[1] - elData.translate.x[0]),
-    deg: Math.abs(elData.rotate[1] - elData.rotate[0]),
-    scale: Math.abs(elData.scale[1] - elData.scale[0]),
-    opacity: Math.abs(elData.opacity[1] - elData.opacity[0])
-  };
-  var sign = deltaTransform.y === 0 || elData.translate.y[1] === 0
-    ? 1
-    : Math.sign(elData.translate.y[1]);
-  var deltaTransformY = elData.translate.unit === 'px'
-    ? deltaTransform.y
-    : elData.rect.height * deltaTransform.y / 100;
-    
-  var denominator = this.viewport.height + deltaTransformY + sign * elData.rect.height;
+  var initTranslateY = 0;
+  var deltaTransformY = 0;
+  if (elData.translate && elData.translate.y) {
+    initTranslateY = getAbsoluteValue(
+      elData.translate.y[0],
+      elData.translate.unit,
+      elData.rect.height
+    );
+    deltaTransformY = getAbsoluteValue(
+      elData.translate.y[1] - elData.translate.y[0] ,
+      elData.translate.unit,
+      elData.rect.height
+    );
+  }
 
-  elData.position = this.scrolled + elData.rect.top - this.viewport.height;
+  var denominator = this.viewport.height + deltaTransformY + elData.rect.height;
+  elData.position = this.scrolled + elData.rect.top + initTranslateY - this.viewport.height;
+
   elData.unitPerScroll = {
-    y: (Math.sign(elData.translate.y[1]) * deltaTransform.y) / denominator,
-    x: (Math.sign(elData.translate.x[1]) * deltaTransform.x) / denominator,
-    deg: (Math.sign(elData.rotate[1]) * deltaTransform.deg) / denominator,
-    scale: ((elData.scale[0] > elData.scale[1] ? -1 : 1) * deltaTransform.scale) / denominator,
-    opacity: ((elData.opacity[0] > elData.opacity[1] ? -1 : 1) * deltaTransform.opacity) / denominator
+    y: elData.translate.y ? valuePerScroll(elData.translate.y, denominator) : undefined,
+    x: elData.translate.x ? valuePerScroll(elData.translate.x, denominator): undefined,
+    deg: elData.rotate ? valuePerScroll(elData.rotate, denominator) : undefined,
+    scale: elData.scale ? valuePerScroll(elData.scale, denominator) : undefined,
+    opacity: elData.opacity ? valuePerScroll(elData.opacity, denominator) : undefined
   };
 };
 

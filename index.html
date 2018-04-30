@@ -98,12 +98,35 @@
       [{
         element: '#square1',
         translate: {
-          y: [-50, 280],
+          unit: '%',
+          y: [50, -100],
         },
       }, {
         element: '#square2',
-        scale: [0.5, 1]
-      }])
+        scale: [0.5, 1],
+        rotate: [-45, 45]
+      }, {
+        element: '#square3',
+        translate: {
+          y: [200, -200],
+        },
+      }, {
+        element: '#square4',
+        translate: {
+          rotate: [-360, 360]
+        },
+        opacity: [0.5, 1]
+      }, {
+        element: '#square5',
+        class: { 'is-active': 'toggle' },
+        omit: true
+      }, {
+        element: '#square6',
+        class: {'is-active': 'once'},
+        // {OR} class: 'is-active',
+        omit: true
+      }]
+    );
   </script>
 </body>
 </html>

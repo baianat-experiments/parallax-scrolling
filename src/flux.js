@@ -1,26 +1,26 @@
-import { select, throttle, getInRange, getAbsoluteValue, valuePerScroll } from './util'
+import { select, throttle, getInRange, getAbsoluteValue, valuePerScroll } from './util';
 
 class Flux {
-  constructor(elmData = [], { breakpoint = 0 } = {}) {
+  constructor (elmData = [], { breakpoint = 0 } = {}) {
     this.elementsData = elmData;
     this.settings = {
       breakpoint
-    }
+    };
     this._init();
   }
 
-  addElement(elmData) {
+  addElement (elmData) {
     this.elementsData.push(elmData);
     this._initElements();
     setTimeout(() => this.update(), 500);
   }
 
-  _init() {
+  _init () {
     this.scrolled = window.scrollY;
     this.viewport = {
       height: window.innerHeight,
       width: window.innerWidth
-    }
+    };
     document.onreadystatechange = () => {
       if (document.readyState === 'complete') {
         this._initObserver();
@@ -31,9 +31,9 @@ class Flux {
     };
   }
 
-  _initElements() {
+  _initElements () {
     this.mediaQuery = window.matchMedia(`(min-width: ${this.settings.breakpoint}px)`);
-    this.elements = []
+    this.elements = [];
     this.elementsData.forEach(data => {
       const elm = select(data.element);
       data.element = elm;
@@ -49,7 +49,7 @@ class Flux {
     });
   }
 
-  _initObserver() {
+  _initObserver () {
     // eslint-disable-next-line
     this.observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
@@ -62,7 +62,7 @@ class Flux {
     });
   }
 
-  _initEvents() {
+  _initEvents () {
     this.scrolling = false;
 
     // scroll optimization https://developer.mozilla.org/en-US/docs/Web/Events/scroll
@@ -83,8 +83,8 @@ class Flux {
       this.viewport = {
         height: window.innerHeight,
         width: window.innerWidth
-      }
-      this.scrolled = window.scrollY
+      };
+      this.scrolled = window.scrollY;
       this.elementsData.forEach(data => {
         if (!data.omit) {
           data.rect = data.element.getBoundingClientRect();
@@ -95,7 +95,7 @@ class Flux {
     }, 100));
   }
 
-  update(force = false) {
+  update (force = false) {
     this.elements.forEach((el, index) => {
       const elData = this.elementsData[index];
       if (
@@ -134,10 +134,10 @@ class Flux {
     });
   }
 
-  getTransform(el) {
+  getTransform (el) {
     const scroll = this.scrolled - el.position;
     const uPerS = el.unitPerScroll; // unit per scroll
-    
+
     const transform = {
       y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
       x: uPerS.x ? getInRange(el.translate.x[0] + scroll * uPerS.x, el.translate.x) : 0,
@@ -148,22 +148,16 @@ class Flux {
     return transform;
   }
 
-  addMissingTransformation(el) {
+  addMissingTransformation (el) {
     if (!el.translate) {
-      el.translate = {}
-    }
-    if (!el.translate.x) {
-      el.translate.x = [0, 0]
-    }
-    if (!el.translate.y) {
-      el.translate.y = [0, 0]
+      el.translate = {};
     }
     if (!el.translate.unit) {
-      el.translate.unit = 'px'
+      el.translate.unit = 'px';
     }
   }
 
-  generateFixedData(elData) {
+  generateFixedData (elData) {
     let initTranslateY = 0;
     let deltaTransformY = 0;
     if (elData.translate && elData.translate.y) {
@@ -171,12 +165,12 @@ class Flux {
         elData.translate.y[0],
         elData.translate.unit,
         elData.rect.height
-      )
+      );
       deltaTransformY = getAbsoluteValue(
-        elData.translate.y[1] - elData.translate.y[0] ,
+        elData.translate.y[1] - elData.translate.y[0],
         elData.translate.unit,
         elData.rect.height
-      )
+      );
     }
 
     const denominator = this.viewport.height + deltaTransformY + elData.rect.height;
@@ -184,11 +178,11 @@ class Flux {
 
     elData.unitPerScroll = {
       y: elData.translate.y ? valuePerScroll(elData.translate.y, denominator) : undefined,
-      x: elData.translate.x ? valuePerScroll(elData.translate.x, denominator): undefined,
+      x: elData.translate.x ? valuePerScroll(elData.translate.x, denominator) : undefined,
       deg: elData.rotate ? valuePerScroll(elData.rotate, denominator) : undefined,
       scale: elData.scale ? valuePerScroll(elData.scale, denominator) : undefined,
       opacity: elData.opacity ? valuePerScroll(elData.opacity, denominator) : undefined
-    }
+    };
   }
 }
 

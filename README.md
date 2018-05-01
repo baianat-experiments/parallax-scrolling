@@ -53,9 +53,12 @@ You create new `Flux` object and pass array of elements, that you want to add ef
 
     // settings
     {
-      // breakpoint disables transformations and opacity.
-      // If you working with class it will still work.
-      breakpoint: 500
+      // breakpoint disables transformations, opacity and class toggling.
+      breakpoint: 500, // defaults 0
+      // if animation ends when the element gets out out of viewport
+      outOfViewport: false, // defaults true
+      // viewport ratio when animation should finish value from [0.1, 1]
+      finishRatio: 1
     }
   );
 ```
@@ -66,6 +69,8 @@ You create new `Flux` object and pass array of elements, that you want to add ef
 {
   // Element css selector or DOM element
   element: '#square1',
+  // viewport ratio when animation should finish value from [0.1, 1]
+  finishRatio: 1
   // Translate object values
   translate: {
     // translate unit, it can be 'px' or '%', defaults is 'px'
@@ -90,9 +95,21 @@ You create new `Flux` object and pass array of elements, that you want to add ef
   class: 'is-active',
   // To disable transform and opacity changes.
   // It usually uses when working with class.
-  omit: true
+  omit: true (deprecated 👎)
 }
 ```
+
+## Methods
+
+### flux.update([force])
+
+* `force` \<boolean\>
+
+Updates elements in viewport position according to the current scroll, using `force` will update all elements event those that are not visible in the viewport
+
+### flux.reload()
+
+Recalculates all elements bounding rectangle and regenerates its data then force update it.
 
 ## Browser Support
 

@@ -37,7 +37,7 @@
       );
     }
     .fixed-margin {
-      height: 150vh;
+      height: 100vh;
     }
     .square {
       width: 200px;
@@ -94,7 +94,7 @@
   
   <script src="dist/flux.js"></script>
   <script>
-    const fluxer = new Flux(
+    const flux = new Flux(
       [{
         element: '#square1',
         translate: {
@@ -103,12 +103,13 @@
         },
       }, {
         element: '#square2',
+        finishRatio: 0.5,
         scale: [0.5, 1],
         rotate: [-45, 45]
       }, {
         element: '#square3',
         translate: {
-          y: [200, -200],
+          y: [100, -100],
         },
       }, {
         element: '#square4',
@@ -119,14 +120,18 @@
       }, {
         element: '#square5',
         class: { 'is-active': 'toggle' },
-        omit: true
       }, {
         element: '#square6',
-        class: {'is-active': 'once'},
         // {OR} class: 'is-active',
-        omit: true
+        class: {'is-active': 'once'},
       }]
     );
+
+    document.onreadystatechange = () => {
+      if (document.readyState === 'complete') {
+        flux.update(true);
+      }
+    };
   </script>
 </body>
 </html>

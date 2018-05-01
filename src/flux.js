@@ -33,6 +33,7 @@ class Flux {
     this.elements = [];
     this.elementsData.forEach(data => {
       const elm = select(data.element);
+      elm.style.willChange = 'transform';
       data.element = elm;
       data.rect = elm.getBoundingClientRect();
       this.addMissingData(data);

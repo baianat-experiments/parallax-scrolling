@@ -1,5 +1,5 @@
 /**
-    * v0.0.0
+    * v0.0.1
     * (c) 2018 Baianat
     * @license MIT
     */
@@ -146,6 +146,7 @@ var Flux = function () {
       this.elements = [];
       this.elementsData.forEach(function (data) {
         var elm = select(data.element);
+        elm.style.willChange = 'transform';
         data.element = elm;
         data.rect = elm.getBoundingClientRect();
         _this2.addMissingData(data);

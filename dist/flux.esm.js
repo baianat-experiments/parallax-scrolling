@@ -144,26 +144,20 @@ var Flux = function () {
   }, {
     key: '_init',
     value: function _init() {
-      var _this2 = this;
-
       this.scrolled = window.scrollY;
       this.viewport = {
         height: window.innerHeight,
         width: window.innerWidth
       };
-      document.onreadystatechange = function () {
-        if (document.readyState === 'complete') {
-          _this2._initObserver();
-          _this2._initElements();
-          _this2._initEvents();
-          _this2.update(true);
-        }
-      };
+      this._initObserver();
+      this._initElements();
+      this._initEvents();
+      this.update(true);
     }
   }, {
     key: '_initElements',
     value: function _initElements() {
-      var _this3 = this;
+      var _this2 = this;
 
       this.mediaQuery = window.matchMedia('(min-width: ' + this.settings.breakpoint + 'px)');
       this.elements = [];
@@ -173,12 +167,12 @@ var Flux = function () {
 
         if (!data.omit) {
           data.rect = elm.getBoundingClientRect();
-          _this3.addMissingTransformation(data);
-          _this3.generateFixedData(data);
+          _this2.addMissingTransformation(data);
+          _this2.generateFixedData(data);
         }
 
-        _this3.observer.observe(elm);
-        _this3.elements.push(data.element);
+        _this2.observer.observe(elm);
+        _this2.elements.push(data.element);
       });
     }
   }, {
@@ -198,48 +192,48 @@ var Flux = function () {
   }, {
     key: '_initEvents',
     value: function _initEvents() {
-      var _this4 = this;
+      var _this3 = this;
 
-      this.scrolling = false;
+      this.ticking = false;
 
       // scroll optimization https://developer.mozilla.org/en-US/docs/Web/Events/scroll
       window.addEventListener('scroll', function () {
-        _this4.scrolled = window.scrollY;
-        if (!_this4.scrolling) {
+        _this3.scrolled = window.scrollY;
+        if (!_this3.ticking) {
           window.requestAnimationFrame(function () {
-            _this4.update();
-            _this4.scrolling = false;
+            _this3.update();
+            _this3.ticking = false;
           });
-          _this4.scrolling = true;
+          _this3.ticking = true;
         }
       }, {
         passive: true
       });
 
       window.addEventListener('resize', throttle(function () {
-        _this4.viewport = {
+        _this3.viewport = {
           height: window.innerHeight,
           width: window.innerWidth
         };
-        _this4.scrolled = window.scrollY;
-        _this4.elementsData.forEach(function (data) {
+        _this3.scrolled = window.scrollY;
+        _this3.elementsData.forEach(function (data) {
           if (!data.omit) {
             data.rect = data.element.getBoundingClientRect();
-            _this4.generateFixedData(data);
+            _this3.generateFixedData(data);
           }
         });
-        _this4.update();
+        _this3.update(true);
       }, 100));
     }
   }, {
     key: 'update',
     value: function update() {
-      var _this5 = this;
+      var _this4 = this;
 
       var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
 
       this.elements.forEach(function (el, index) {
-        var elData = _this5.elementsData[index];
+        var elData = _this4.elementsData[index];
         if (!el.dataset.fluxInViewport && elData.class && Object.values(elData.class)[0] === 'toggle') {
           el.classList.remove(Object.keys(elData.class)[0]);
           return;
@@ -254,45 +248,35 @@ var Flux = function () {
           el.classList.add(className);
         }
 
-        if (!_this5.mediaQuery.matches) {
+        if (!_this4.mediaQuery.matches) {
           elData.element.style.transform = '';
           elData.element.style.opacity = '';
           return;
         }
 
         if (!elData.omit) {
-          _this5.transform = _this5.getTransform(elData);
-          el.style.transform = '\n          translateX(' + _this5.transform.x + elData.translate.unit + ')\n          translateY(' + _this5.transform.y + elData.translate.unit + ')\n          rotate(' + _this5.transform.deg + 'deg)\n          scale(' + _this5.transform.scale + ')';
-          el.style.opacity = _this5.transform.opacity;
+          var uPerS = elData.unitPerScroll; // unit per scroll
+          var unit = elData.translate.unit;
+          var position = elData.position;
+          /* eslint-disable */
+          el.style.transform = '\n          ' + (uPerS.x ? 'translateX(' + _this4.getTransform(elData.transform.x, uPerS.x, position) + unit + ')' : '') + '\n          ' + (uPerS.y ? 'translateY(' + _this4.getTransform(elData.transform.y, uPerS.y, position) + unit + ')' : '') + '\n          ' + (uPerS.deg ? 'rotate(' + _this4.getTransform(elData.rotate, uPerS.deg, position) + 'deg)' : '') + '\n          ' + (uPerS.scale ? 'scale(' + _this4.getTransform(elData.scale, uPerS.scale, position) + ')' : '');
+
+          /* eslint-enable */
+          el.style.opacity = uPerS.opacity ? _this4.getTransform(elData.opacity, uPerS.opacity, position) : '';
         }
       });
     }
   }, {
     key: 'getTransform',
-    value: function getTransform(el) {
-      var scroll = this.scrolled - el.position;
-      var uPerS = el.unitPerScroll; // unit per scroll
-
-      var transform = {
-        y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
-        x: uPerS.x ? getInRange(el.translate.x[0] + scroll * uPerS.x, el.translate.x) : 0,
-        deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * uPerS.deg, el.rotate) : 0,
-        scale: uPerS.scale ? getInRange(el.scale[0] + scroll * uPerS.scale, el.scale) : 1,
-        opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * uPerS.opacity, el.opacity) : 1
-      };
-      return transform;
+    value: function getTransform(values, unitPerValue, elPosition) {
+      var scroll = this.scrolled - elPosition;
+      return getInRange(values[0] + scroll * unitPerValue, values);
     }
   }, {
     key: 'addMissingTransformation',
     value: function addMissingTransformation(el) {
       if (!el.translate) {
         el.translate = {};
-      }
-      if (!el.translate.x) {
-        el.translate.x = [0, 0];
-      }
-      if (!el.translate.y) {
-        el.translate.y = [0, 0];
       }
       if (!el.translate.unit) {
         el.translate.unit = 'px';

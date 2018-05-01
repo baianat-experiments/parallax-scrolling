@@ -1,10 +1,11 @@
-import { select, throttle, getInRange, getAbsoluteValue, valuePerScroll } from './util';
+import { select, throttle, getInRange, getAbsoluteValue } from './util';
 
 class Flux {
-  constructor (elmData = [], { breakpoint = 0 } = {}) {
+  constructor (elmData = [], settings) {
     this.elementsData = elmData;
     this.settings = {
-      breakpoint
+      ...Flux.defaults,
+      ...settings
     };
     this._init();
   }
@@ -21,14 +22,10 @@ class Flux {
       height: window.innerHeight,
       width: window.innerWidth
     };
-    document.onreadystatechange = () => {
-      if (document.readyState === 'complete') {
-        this._initObserver();
-        this._initElements();
-        this._initEvents();
-        this.update(true);
-      }
-    };
+    this._initObserver();
+    this._initElements();
+    this._initEvents();
+    this.update(true);
   }
 
   _initElements () {
@@ -37,13 +34,9 @@ class Flux {
     this.elementsData.forEach(data => {
       const elm = select(data.element);
       data.element = elm;
-
-      if (!data.omit) {
-        data.rect = elm.getBoundingClientRect();
-        this.addMissingTransformation(data);
-        this.generateFixedData(data);
-      }
-
+      data.rect = elm.getBoundingClientRect();
+      this.addMissingData(data);
+      this.generateFixedData(data);
       this.observer.observe(elm);
       this.elements.push(data.element);
     });
@@ -63,17 +56,17 @@ class Flux {
   }
 
   _initEvents () {
-    this.scrolling = false;
+    this.ticking = false;
 
     // scroll optimization https://developer.mozilla.org/en-US/docs/Web/Events/scroll
     window.addEventListener('scroll', () => {
       this.scrolled = window.scrollY;
-      if (!this.scrolling) {
+      if (!this.ticking) {
         window.requestAnimationFrame(() => {
           this.update();
-          this.scrolling = false;
+          this.ticking = false;
         });
-        this.scrolling = true;
+        this.ticking = true;
       }
     }, {
       passive: true
@@ -85,14 +78,16 @@ class Flux {
         width: window.innerWidth
       };
       this.scrolled = window.scrollY;
-      this.elementsData.forEach(data => {
-        if (!data.omit) {
-          data.rect = data.element.getBoundingClientRect();
-          this.generateFixedData(data);
-        }
-      });
-      this.update();
+      this.reload();
     }, 100));
+  }
+
+  reload () {
+    this.elementsData.forEach(data => {
+      data.rect = data.element.getBoundingClientRect();
+      this.generateFixedData(data);
+    });
+    this.update(true);
   }
 
   update (force = false) {
@@ -106,49 +101,42 @@ class Flux {
         el.classList.remove(Object.keys(elData.class)[0]);
         return;
       }
-
       if (!el.dataset.fluxInViewport && !force) {
         return;
       }
-
-      if (elData.class) {
-        const className = typeof elData.class === 'string' ? elData.class : Object.keys(elData.class)[0];
-        el.classList.add(className);
-      }
-
       if (!this.mediaQuery.matches) {
         elData.element.style.transform = '';
         elData.element.style.opacity = '';
         return;
       }
-
-      if (!elData.omit) {
-        this.transform = this.getTransform(elData);
-        el.style.transform = `
-          translateX(${this.transform.x}${elData.translate.unit})
-          translateY(${this.transform.y}${elData.translate.unit})
-          rotate(${this.transform.deg}deg)
-          scale(${this.transform.scale})`;
-        el.style.opacity = this.transform.opacity;
+      if (elData.class) {
+        const className = typeof elData.class === 'string'
+          ? elData.class
+          : Object.keys(elData.class)[0];
+        el.classList.add(className);
       }
+      this.updateTransformation(el, elData);
     });
   }
 
-  getTransform (el) {
-    const scroll = this.scrolled - el.position;
-    const uPerS = el.unitPerScroll; // unit per scroll
+  updateTransformation (element, elData) {
+    const uPerS = elData.unitPerScroll; // unit per scroll
+    const unit = elData.translate.unit;
+    const scroll = this.scrolled - elData.position;
 
-    const transform = {
-      y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
-      x: uPerS.x ? getInRange(el.translate.x[0] + scroll * uPerS.x, el.translate.x) : 0,
-      deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * uPerS.deg, el.rotate) : 0,
-      scale: uPerS.scale ? getInRange(el.scale[0] + scroll * uPerS.scale, el.scale) : 1,
-      opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * uPerS.opacity, el.opacity) : 1
+    element.style.transform = `
+      ${uPerS.x ? `translateX(${getTransform(elData.translate.x, uPerS.x)}${unit})` : ''}
+      ${uPerS.y ? `translateY(${getTransform(elData.translate.y, uPerS.y)}${unit})` : ''}
+      ${uPerS.deg ? `rotate(${getTransform(elData.rotate, uPerS.deg)}deg)` : ''}
+      ${uPerS.scale ? `scale(${getTransform(elData.scale, uPerS.scale)})` : ''}
+    `;
+    element.style.opacity = uPerS.opacity ? getTransform(elData.opacity, uPerS.opacity) : '';
+    function getTransform (values, unitPerValue) {
+      return getInRange(values[0] + scroll * unitPerValue, values);
     };
-    return transform;
   }
 
-  addMissingTransformation (el) {
+  addMissingData (el) {
     if (!el.translate) {
       el.translate = {};
     }
@@ -161,29 +149,42 @@ class Flux {
     let initTranslateY = 0;
     let deltaTransformY = 0;
     if (elData.translate && elData.translate.y) {
-      initTranslateY = getAbsoluteValue(
-        elData.translate.y[0],
-        elData.translate.unit,
-        elData.rect.height
-      );
-      deltaTransformY = getAbsoluteValue(
-        elData.translate.y[1] - elData.translate.y[0],
-        elData.translate.unit,
-        elData.rect.height
-      );
+      initTranslateY = getAbsoluteValue(elData.translate.y[0]);
+      deltaTransformY = getAbsoluteValue(elData.translate.y[1] - elData.translate.y[0]);
     }
+    const denominator = 
+      ((elData.finishRatio || this.settings.finishRatio) * this.viewport.height)
+      + (this.settings.outOfViewport ? elData.rect.height : 0)
+      + deltaTransformY;
 
-    const denominator = this.viewport.height + deltaTransformY + elData.rect.height;
+    /* eslint-disable no-multi-spaces */
     elData.position = this.scrolled + elData.rect.top + initTranslateY - this.viewport.height;
-
     elData.unitPerScroll = {
-      y: elData.translate.y ? valuePerScroll(elData.translate.y, denominator) : undefined,
-      x: elData.translate.x ? valuePerScroll(elData.translate.x, denominator) : undefined,
-      deg: elData.rotate ? valuePerScroll(elData.rotate, denominator) : undefined,
-      scale: elData.scale ? valuePerScroll(elData.scale, denominator) : undefined,
-      opacity: elData.opacity ? valuePerScroll(elData.opacity, denominator) : undefined
+      ...elData.translate.y && { y: valuePerScroll(elData.translate.y) },
+      ...elData.translate.x && { x: valuePerScroll(elData.translate.x) },
+      ...elData.rotate      && { deg: valuePerScroll(elData.rotate) },
+      ...elData.scale       && { scale: valuePerScroll(elData.scale) },
+      ...elData.opacity     && { opacity: valuePerScroll(elData.opacity) }
+    };
+    /* eslint-enable */
+
+    function getAbsoluteValue (value)  {
+      return elData.translate.unit === 'px' 
+        ? value 
+        : value / 100 * elData.rect.height;
+    }
+    function valuePerScroll ([start, end]) {
+      return (end - start) / denominator;
     };
   }
+
+  // eslint-disable-next-line
+  static defaults = {
+    breakpoint: 0,
+    finishRatio: 1,
+    outOfViewport: true
+  }
+  
 }
 
 export default Flux;

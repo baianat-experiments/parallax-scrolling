@@ -54,10 +54,3 @@ export function getInRange (value, [start, end]) {
 
   return Math.max(Math.min(value, max), min);
 }
-
-export function getAbsoluteValue (value, unit, elHeight) {
-  return unit === 'px' ? value : value / 100 * elHeight;
-}
-export function valuePerScroll ([start, end], denominator) {
-  return (end - start) / denominator;
-}

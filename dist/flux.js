@@ -108,31 +108,14 @@
     return Math.max(Math.min(value, max), min);
   }
 
-  function getAbsoluteValue(value, unit, elHeight) {
-    return unit === 'px' ? value : value / 100 * elHeight;
-  }
-  function valuePerScroll(_ref3, denominator) {
-    var _ref4 = slicedToArray(_ref3, 2),
-        start = _ref4[0],
-        end = _ref4[1];
-
-    return (end - start) / denominator;
-  }
-
   var Flux = function () {
     function Flux() {
       var elmData = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-
-      var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
-          _ref$breakpoint = _ref.breakpoint,
-          breakpoint = _ref$breakpoint === undefined ? 0 : _ref$breakpoint;
-
+      var settings = arguments[1];
       classCallCheck(this, Flux);
 
       this.elementsData = elmData;
-      this.settings = {
-        breakpoint: breakpoint
-      };
+      this.settings = Object.assign({}, Flux.defaults, settings);
       this._init();
     }
 
@@ -150,41 +133,31 @@
     }, {
       key: '_init',
       value: function _init() {
-        var _this2 = this;
-
         this.scrolled = window.scrollY;
         this.viewport = {
           height: window.innerHeight,
           width: window.innerWidth
         };
-        document.onreadystatechange = function () {
-          if (document.readyState === 'complete') {
-            _this2._initObserver();
-            _this2._initElements();
-            _this2._initEvents();
-            _this2.update(true);
-          }
-        };
+        this._initObserver();
+        this._initElements();
+        this._initEvents();
+        this.update(true);
       }
     }, {
       key: '_initElements',
       value: function _initElements() {
-        var _this3 = this;
+        var _this2 = this;
 
         this.mediaQuery = window.matchMedia('(min-width: ' + this.settings.breakpoint + 'px)');
         this.elements = [];
         this.elementsData.forEach(function (data) {
           var elm = select(data.element);
           data.element = elm;
-
-          if (!data.omit) {
-            data.rect = elm.getBoundingClientRect();
-            _this3.addMissingTransformation(data);
-            _this3.generateFixedData(data);
-          }
-
-          _this3.observer.observe(elm);
-          _this3.elements.push(data.element);
+          data.rect = elm.getBoundingClientRect();
+          _this2.addMissingData(data);
+          _this2.generateFixedData(data);
+          _this2.observer.observe(elm);
+          _this2.elements.push(data.element);
         });
       }
     }, {
@@ -204,38 +177,43 @@
     }, {
       key: '_initEvents',
       value: function _initEvents() {
-        var _this4 = this;
+        var _this3 = this;
 
-        this.scrolling = false;
+        this.ticking = false;
 
         // scroll optimization https://developer.mozilla.org/en-US/docs/Web/Events/scroll
         window.addEventListener('scroll', function () {
-          _this4.scrolled = window.scrollY;
-          if (!_this4.scrolling) {
+          _this3.scrolled = window.scrollY;
+          if (!_this3.ticking) {
             window.requestAnimationFrame(function () {
-              _this4.update();
-              _this4.scrolling = false;
+              _this3.update();
+              _this3.ticking = false;
             });
-            _this4.scrolling = true;
+            _this3.ticking = true;
           }
         }, {
           passive: true
         });
 
         window.addEventListener('resize', throttle(function () {
-          _this4.viewport = {
+          _this3.viewport = {
             height: window.innerHeight,
             width: window.innerWidth
           };
-          _this4.scrolled = window.scrollY;
-          _this4.elementsData.forEach(function (data) {
-            if (!data.omit) {
-              data.rect = data.element.getBoundingClientRect();
-              _this4.generateFixedData(data);
-            }
-          });
-          _this4.update();
+          _this3.scrolled = window.scrollY;
+          _this3.reload();
         }, 100));
+      }
+    }, {
+      key: 'reload',
+      value: function reload() {
+        var _this4 = this;
+
+        this.elementsData.forEach(function (data) {
+          data.rect = data.element.getBoundingClientRect();
+          _this4.generateFixedData(data);
+        });
+        this.update(true);
       }
     }, {
       key: 'update',
@@ -250,47 +228,36 @@
             el.classList.remove(Object.keys(elData.class)[0]);
             return;
           }
-
           if (!el.dataset.fluxInViewport && !force) {
             return;
           }
-
-          if (elData.class) {
-            var className = typeof elData.class === 'string' ? elData.class : Object.keys(elData.class)[0];
-            el.classList.add(className);
-          }
-
           if (!_this5.mediaQuery.matches) {
             elData.element.style.transform = '';
             elData.element.style.opacity = '';
             return;
           }
-
-          if (!elData.omit) {
-            _this5.transform = _this5.getTransform(elData);
-            el.style.transform = '\n          translateX(' + _this5.transform.x + elData.translate.unit + ')\n          translateY(' + _this5.transform.y + elData.translate.unit + ')\n          rotate(' + _this5.transform.deg + 'deg)\n          scale(' + _this5.transform.scale + ')';
-            el.style.opacity = _this5.transform.opacity;
+          if (elData.class) {
+            var className = typeof elData.class === 'string' ? elData.class : Object.keys(elData.class)[0];
+            el.classList.add(className);
           }
+          _this5.updateTransformation(el, elData);
         });
       }
     }, {
-      key: 'getTransform',
-      value: function getTransform(el) {
-        var scroll = this.scrolled - el.position;
-        var uPerS = el.unitPerScroll; // unit per scroll
+      key: 'updateTransformation',
+      value: function updateTransformation(element, elData) {
+        var uPerS = elData.unitPerScroll; // unit per scroll
+        var unit = elData.translate.unit;
+        var scroll = this.scrolled - elData.position;
 
-        var transform = {
-          y: uPerS.y ? getInRange(el.translate.y[0] + scroll * uPerS.y, el.translate.y) : 0,
-          x: uPerS.x ? getInRange(el.translate.x[0] + scroll * uPerS.x, el.translate.x) : 0,
-          deg: uPerS.deg ? getInRange(el.rotate[0] + scroll * uPerS.deg, el.rotate) : 0,
-          scale: uPerS.scale ? getInRange(el.scale[0] + scroll * uPerS.scale, el.scale) : 1,
-          opacity: uPerS.opacity ? getInRange(el.opacity[0] + scroll * uPerS.opacity, el.opacity) : 1
-        };
-        return transform;
-      }
+        element.style.transform = '\n      ' + (uPerS.x ? 'translateX(' + getTransform(elData.translate.x, uPerS.x) + unit + ')' : '') + '\n      ' + (uPerS.y ? 'translateY(' + getTransform(elData.translate.y, uPerS.y) + unit + ')' : '') + '\n      ' + (uPerS.deg ? 'rotate(' + getTransform(elData.rotate, uPerS.deg) + 'deg)' : '') + '\n      ' + (uPerS.scale ? 'scale(' + getTransform(elData.scale, uPerS.scale) + ')' : '') + '\n    ';
+        element.style.opacity = uPerS.opacity ? getTransform(elData.opacity, uPerS.opacity) : '';
+        function getTransform(values, unitPerValue) {
+          return getInRange(values[0] + scroll * unitPerValue, values);
+        }    }
     }, {
-      key: 'addMissingTransformation',
-      value: function addMissingTransformation(el) {
+      key: 'addMissingData',
+      value: function addMissingData(el) {
         if (!el.translate) {
           el.translate = {};
         }
@@ -304,24 +271,38 @@
         var initTranslateY = 0;
         var deltaTransformY = 0;
         if (elData.translate && elData.translate.y) {
-          initTranslateY = getAbsoluteValue(elData.translate.y[0], elData.translate.unit, elData.rect.height);
-          deltaTransformY = getAbsoluteValue(elData.translate.y[1] - elData.translate.y[0], elData.translate.unit, elData.rect.height);
+          initTranslateY = getAbsoluteValue(elData.translate.y[0]);
+          deltaTransformY = getAbsoluteValue(elData.translate.y[1] - elData.translate.y[0]);
         }
+        var denominator = (elData.finishRatio || this.settings.finishRatio) * this.viewport.height + (this.settings.outOfViewport ? elData.rect.height : 0) + deltaTransformY;
 
-        var denominator = this.viewport.height + deltaTransformY + elData.rect.height;
+        /* eslint-disable no-multi-spaces */
         elData.position = this.scrolled + elData.rect.top + initTranslateY - this.viewport.height;
+        elData.unitPerScroll = Object.assign({}, elData.translate.y && { y: valuePerScroll(elData.translate.y) }, elData.translate.x && { x: valuePerScroll(elData.translate.x) }, elData.rotate && { deg: valuePerScroll(elData.rotate) }, elData.scale && { scale: valuePerScroll(elData.scale) }, elData.opacity && { opacity: valuePerScroll(elData.opacity) });
+        /* eslint-enable */
 
-        elData.unitPerScroll = {
-          y: elData.translate.y ? valuePerScroll(elData.translate.y, denominator) : undefined,
-          x: elData.translate.x ? valuePerScroll(elData.translate.x, denominator) : undefined,
-          deg: elData.rotate ? valuePerScroll(elData.rotate, denominator) : undefined,
-          scale: elData.scale ? valuePerScroll(elData.scale, denominator) : undefined,
-          opacity: elData.opacity ? valuePerScroll(elData.opacity, denominator) : undefined
-        };
-      }
+        function getAbsoluteValue(value) {
+          return elData.translate.unit === 'px' ? value : value / 100 * elData.rect.height;
+        }
+        function valuePerScroll(_ref) {
+          var _ref2 = slicedToArray(_ref, 2),
+              start = _ref2[0],
+              end = _ref2[1];
+
+          return (end - start) / denominator;
+        }    }
+
+      // eslint-disable-next-line
+
     }]);
     return Flux;
   }();
+
+  Flux.defaults = {
+    breakpoint: 0,
+    finishRatio: 1,
+    outOfViewport: true
+  };
 
   return Flux;
 

@@ -1,11 +1,15 @@
 {
   "name": "@baianat/flux.js",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "author": "Abdelrahman Ismail <abdelrahman3d@gmail.com>",
   "main": "dist/flux.js",
   "module": "dist/flux.esm.js",
   "license": "MIT",
-  "keywords": ["scroll", "parallax", "flux"],
+  "keywords": [
+    "scroll",
+    "parallax",
+    "flux"
+  ],
   "maintainers": [
     {
       "name": "Abdelrahman3D",
